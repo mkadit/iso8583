@@ -2,6 +2,7 @@ package iso8583
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -10,18 +11,19 @@ import (
 
 // Core error types
 var (
-	ErrInvalidLength     = errors.New("invalid length")
-	ErrInsufficientData  = errors.New("insufficient data")
-	ErrInvalidMTI        = errors.New("invalid MTI")
-	ErrInvalidBit        = errors.New("invalid bit")
-	ErrInvalidPackager   = errors.New("invalid packager")
-	ErrBufferTooSmall    = errors.New("buffer too small")
-	ErrFieldNotFound     = errors.New("field not found")
-	ErrInvalidBitmap     = errors.New("invalid bitmap")
-	ErrInvalidTLV        = errors.New("invalid TLV structure")
-	ErrUnsupportedFormat = errors.New("unsupported format")
-	ErrInvalidTag        = errors.New("invalid tag")
-	ErrHexDataOddLength  = errors.New("hex data must have even length")
+	ErrInvalidLength         = errors.New("invalid length")
+	ErrInsufficientData      = errors.New("insufficient data")
+	ErrInvalidMTI            = errors.New("invalid MTI")
+	ErrInvalidBit            = errors.New("invalid bit")
+	ErrInvalidPackager       = errors.New("invalid packager")
+	ErrBufferTooSmall        = errors.New("buffer too small")
+	ErrFieldNotFound         = errors.New("field not found")
+	ErrInvalidBitmap         = errors.New("invalid bitmap")
+	ErrInvalidTLV            = errors.New("invalid TLV structure")
+	ErrUnsupportedFormat     = errors.New("unsupported format")
+	ErrInvalidTag            = errors.New("invalid tag")
+	ErrHexDataOddLength      = errors.New("hex data must have even length")
+	ErrMissingMandatoryField = errors.New("missing mandatory field")
 )
 
 // HeaderType defines how ISO8583 message length headers are encoded
@@ -32,8 +34,211 @@ const (
 	HeaderBinary            // 2-byte binary length
 	HeaderASCII             // 4-digit ASCII decimal length
 	HeaderHex               // 4-char ASCII hex length
-	HeaderCustom            // Custom header format
 )
+
+// FieldType defines the data type and encoding of a field.
+type FieldType string
+
+const (
+	ANS    FieldType = "ans" // Alphanumeric, special characters
+	N      FieldType = "n"   // Numeric
+	B      FieldType = "b"   // Binary
+	Z      FieldType = "z"   // Tracks 2 and 3 code set
+	Custom FieldType = "custom"
+)
+
+// LengthType defines how the length of a field is determined.
+type LengthType string
+
+const (
+	FIXED  LengthType = "FIXED"
+	LLVAR  LengthType = "LLVAR"
+	LLLVAR LengthType = "LLLVAR"
+)
+
+// FieldDefinition describes a single field in an ISO8583 message.
+type FieldDefinition struct {
+	Type        FieldType
+	LengthType  LengthType
+	MaxLength   int
+	IsMandatory bool // For validation purposes, not packing/parsing logic
+}
+
+// Packager holds the complete definition for an ISO8583 message format.
+type Packager struct {
+	Fields [129]FieldDefinition
+}
+
+// A temporary struct matching the JSON structure for easy unmarshalling.
+type jsonFieldDefinition struct {
+	IsMandatory bool `json:"isMandatory"`
+	Type        FieldType
+	Length      struct {
+		Type LengthType
+		Max  int
+	}
+}
+
+// NewPackagerFromJSON creates a new Packager from a JSON configuration.
+func NewPackagerFromJSON(configData []byte) (*Packager, error) {
+	var config map[string]jsonFieldDefinition
+	if err := json.Unmarshal(configData, &config); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal packager JSON: %w", err)
+	}
+
+	packager := &Packager{}
+	for fieldStr, fieldConfig := range config {
+		fieldNum, err := strconv.Atoi(fieldStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid field number in JSON: %s", fieldStr)
+		}
+		if fieldNum < 1 || fieldNum > 128 {
+			return nil, fmt.Errorf("field number out of range (1-128): %d", fieldNum)
+		}
+
+		packager.Fields[fieldNum] = FieldDefinition{
+			IsMandatory: fieldConfig.IsMandatory,
+			Type:        fieldConfig.Type,
+			LengthType:  fieldConfig.Length.Type,
+			MaxLength:   fieldConfig.Length.Max,
+		}
+	}
+	return packager, nil
+}
+
+// DefaultPackager returns a packager based on the ISO 8583-1:1987 standard.
+func DefaultPackager() *Packager {
+	p := &Packager{}
+	p.Fields[1] = FieldDefinition{Type: B, LengthType: FIXED, MaxLength: 16, IsMandatory: true} // Bitmap
+	p.Fields[2] = FieldDefinition{Type: N, LengthType: LLVAR, MaxLength: 19}                    // Primary account number (PAN)
+	p.Fields[3] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 6, IsMandatory: true}  // Processing code
+	p.Fields[4] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 12}                    // Amount, transaction
+	p.Fields[5] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 12}                    // Amount, settlement
+	p.Fields[6] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 12}                    // Amount, cardholder billing
+	p.Fields[7] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 10, IsMandatory: true} // Transmission date & time
+	p.Fields[8] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 8}                     // Amount, cardholder billing fee
+	p.Fields[9] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 8}                     // Conversion rate, settlement
+	p.Fields[10] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 8}                    // Conversion rate, cardholder billing
+	p.Fields[11] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 6, IsMandatory: true} // System trace audit number (STAN)
+	p.Fields[12] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 6}                    // Time, local transaction
+	p.Fields[13] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 4}                    // Date, local transaction
+	p.Fields[14] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 4}                    // Date, expiration
+	p.Fields[15] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 4}                    // Date, settlement
+	p.Fields[16] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 4}                    // Date, conversion
+	p.Fields[17] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 4}                    // Date, capture
+	p.Fields[18] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 4}                    // Merchant type
+	p.Fields[19] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 3}                    // Acquiring institution country code
+	p.Fields[20] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 3}                    // PAN extended, country code
+	p.Fields[21] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 3}                    // Forwarding institution. country code
+	p.Fields[22] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 3}                    // Point of service entry mode
+	p.Fields[23] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 3}                    // Application PAN sequence number
+	p.Fields[24] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 3}                    // Network International identifier (NII)
+	p.Fields[25] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 2}                    // Point of service condition code
+	p.Fields[26] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 2}                    // Point of service capture code
+	p.Fields[27] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 1}                    // Authorizing identification response length
+	p.Fields[28] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 9}                    // Amount, transaction fee
+	p.Fields[29] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 9}                    // Amount, settlement fee
+	p.Fields[30] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 9}                    // Amount, transaction processing fee
+	p.Fields[31] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 9}                    // Amount, settlement processing fee
+	p.Fields[32] = FieldDefinition{Type: N, LengthType: LLVAR, MaxLength: 11}                   // Acquiring institution identification code
+	p.Fields[33] = FieldDefinition{Type: N, LengthType: LLVAR, MaxLength: 11}                   // Forwarding institution identification code
+	p.Fields[34] = FieldDefinition{Type: ANS, LengthType: LLVAR, MaxLength: 28}                 // Primary account number, extended
+	p.Fields[35] = FieldDefinition{Type: Z, LengthType: LLVAR, MaxLength: 37}                   // Track 2 data
+	p.Fields[36] = FieldDefinition{Type: N, LengthType: LLLVAR, MaxLength: 104}                 // Track 3 data
+	p.Fields[37] = FieldDefinition{Type: ANS, LengthType: FIXED, MaxLength: 12}                 // Retrieval reference number
+	p.Fields[38] = FieldDefinition{Type: ANS, LengthType: FIXED, MaxLength: 6}                  // Authorization identification response
+	p.Fields[39] = FieldDefinition{Type: ANS, LengthType: FIXED, MaxLength: 2}                  // Response code
+	p.Fields[40] = FieldDefinition{Type: ANS, LengthType: FIXED, MaxLength: 3}                  // Service restriction code
+	p.Fields[41] = FieldDefinition{Type: ANS, LengthType: FIXED, MaxLength: 8}                  // Card acceptor terminal identification
+	p.Fields[42] = FieldDefinition{Type: ANS, LengthType: FIXED, MaxLength: 15}                 // Card acceptor identification code
+	p.Fields[43] = FieldDefinition{Type: ANS, LengthType: FIXED, MaxLength: 40}                 // Card acceptor name/location
+	p.Fields[44] = FieldDefinition{Type: ANS, LengthType: LLVAR, MaxLength: 25}                 // Additional response data
+	p.Fields[45] = FieldDefinition{Type: ANS, LengthType: LLVAR, MaxLength: 76}                 // Track 1 data
+	p.Fields[46] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}               // Additional data - ISO
+	p.Fields[47] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}               // Additional data - national
+	p.Fields[48] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}               // Additional data - private
+	p.Fields[49] = FieldDefinition{Type: ANS, LengthType: FIXED, MaxLength: 3}                  // Currency code, transaction
+	p.Fields[50] = FieldDefinition{Type: ANS, LengthType: FIXED, MaxLength: 3}                  // Currency code, settlement
+	p.Fields[51] = FieldDefinition{Type: ANS, LengthType: FIXED, MaxLength: 3}                  // Currency code, cardholder billing
+	p.Fields[52] = FieldDefinition{Type: B, LengthType: FIXED, MaxLength: 16}                   // Personal identification number data
+	p.Fields[53] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 16}                   // Security related control information
+	p.Fields[54] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 120}               // Additional amounts
+	p.Fields[55] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}               // Reserved ISO
+	p.Fields[56] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}               // Reserved ISO
+	p.Fields[57] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}               // Reserved national
+	p.Fields[58] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}               // Reserved national
+	p.Fields[59] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}               // Reserved private
+	p.Fields[60] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}               // Reserved private
+	p.Fields[61] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}               // Reserved private
+	p.Fields[62] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}               // Reserved private
+	p.Fields[63] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}               // Reserved private
+	p.Fields[64] = FieldDefinition{Type: B, LengthType: FIXED, MaxLength: 16}                   // Message authentication code
+	p.Fields[65] = FieldDefinition{Type: B, LengthType: FIXED, MaxLength: 16}                   // Bitmap, extended
+	p.Fields[66] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 1}                    // Settlement code
+	p.Fields[67] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 2}                    // Extended payment code
+	p.Fields[68] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 3}                    // Receiving institution country code
+	p.Fields[69] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 3}                    // Settlement institution country code
+	p.Fields[70] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 3}                    // Network management information code
+	p.Fields[71] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 4}                    // Message number
+	p.Fields[72] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 4}                    // Message number, last
+	p.Fields[73] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 6}                    // Date, action
+	p.Fields[74] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 10}                   // Credits, number
+	p.Fields[75] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 10}                   // Credits, reversal number
+	p.Fields[76] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 10}                   // Debits, number
+	p.Fields[77] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 10}                   // Debits, reversal number
+	p.Fields[78] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 10}                   // Transfer number
+	p.Fields[79] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 10}                   // Transfer, reversal number
+	p.Fields[80] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 10}                   // Inquiries number
+	p.Fields[81] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 10}                   // Authorizations, number
+	p.Fields[82] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 12}                   // Credits, processing fee amount
+	p.Fields[83] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 12}                   // Credits, transaction fee amount
+	p.Fields[84] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 12}                   // Debits, processing fee amount
+	p.Fields[85] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 12}                   // Debits, transaction fee amount
+	p.Fields[86] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 16}                   // Credits, amount
+	p.Fields[87] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 16}                   // Credits, reversal amount
+	p.Fields[88] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 16}                   // Debits, amount
+	p.Fields[89] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 16}                   // Debits, reversal amount
+	p.Fields[90] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 42}                   // Original data elements
+	p.Fields[91] = FieldDefinition{Type: ANS, LengthType: FIXED, MaxLength: 1}                  // File update code
+	p.Fields[92] = FieldDefinition{Type: ANS, LengthType: FIXED, MaxLength: 2}                  // File security code
+	p.Fields[93] = FieldDefinition{Type: ANS, LengthType: FIXED, MaxLength: 5}                  // Response indicator
+	p.Fields[94] = FieldDefinition{Type: ANS, LengthType: FIXED, MaxLength: 7}                  // Service indicator
+	p.Fields[95] = FieldDefinition{Type: ANS, LengthType: FIXED, MaxLength: 42}                 // Replacement amounts
+	p.Fields[96] = FieldDefinition{Type: B, LengthType: FIXED, MaxLength: 16}                   // Message security code
+	p.Fields[97] = FieldDefinition{Type: N, LengthType: FIXED, MaxLength: 16}                   // Amount, net settlement
+	p.Fields[98] = FieldDefinition{Type: ANS, LengthType: FIXED, MaxLength: 25}                 // Payee
+	p.Fields[99] = FieldDefinition{Type: N, LengthType: LLVAR, MaxLength: 11}                   // Settlement institution identification code
+	p.Fields[100] = FieldDefinition{Type: N, LengthType: LLVAR, MaxLength: 11}                  // Receiving institution identification code
+	p.Fields[101] = FieldDefinition{Type: ANS, LengthType: LLVAR, MaxLength: 17}                // File name
+	p.Fields[102] = FieldDefinition{Type: ANS, LengthType: LLVAR, MaxLength: 28}                // Account identification 1
+	p.Fields[103] = FieldDefinition{Type: ANS, LengthType: LLVAR, MaxLength: 28}                // Account identification 2
+	p.Fields[104] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 100}              // Transaction description
+	p.Fields[105] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for ISO use
+	p.Fields[106] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for ISO use
+	p.Fields[107] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for ISO use
+	p.Fields[108] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for ISO use
+	p.Fields[109] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for ISO use
+	p.Fields[110] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for ISO use
+	p.Fields[111] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for ISO use
+	p.Fields[112] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for national use
+	p.Fields[113] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for national use
+	p.Fields[114] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for national use
+	p.Fields[115] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for national use
+	p.Fields[116] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for national use
+	p.Fields[117] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for national use
+	p.Fields[118] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for national use
+	p.Fields[119] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for national use
+	p.Fields[120] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for private use
+	p.Fields[121] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for private use
+	p.Fields[122] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for private use
+	p.Fields[123] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for private use
+	p.Fields[124] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for private use
+	p.Fields[125] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for private use
+	p.Fields[126] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for private use
+	p.Fields[127] = FieldDefinition{Type: ANS, LengthType: LLLVAR, MaxLength: 999}              // Reserved for private use
+	p.Fields[128] = FieldDefinition{Type: B, LengthType: FIXED, MaxLength: 16}                  // Message authentication code
+	return p
+}
 
 // HeaderConfig defines configuration for custom headers
 type HeaderConfig struct {
@@ -49,42 +254,6 @@ var DefaultHeaderConfigs = map[HeaderType]HeaderConfig{
 	HeaderHex:    {Type: HeaderHex, Length: 4},
 }
 
-// Packager defines the message structure and field formats
-type Packager struct {
-	IsoPackager []int // Field definitions (0 = not used, positive = fixed length, negative = variable)
-}
-
-// DefaultISOPackager returns a standard ISO8583 packager configuration
-func DefaultISOPackager() *Packager {
-	p := &Packager{
-		IsoPackager: make([]int, 129), // 0-128 (field 0 is MTI)
-	}
-
-	// Standard ISO8583 field definitions
-	p.IsoPackager[0] = 4     // MTI (fixed 4 digits)
-	p.IsoPackager[1] = 64    // Primary bitmap (fixed 64 bits = 16 hex chars)
-	p.IsoPackager[2] = -19   // Primary account number (variable 2-19 digits)
-	p.IsoPackager[3] = 6     // Processing code (fixed 6 digits)
-	p.IsoPackager[4] = 12    // Transaction amount (fixed 12 digits)
-	p.IsoPackager[7] = 10    // Transmission date & time (fixed 10 digits)
-	p.IsoPackager[11] = 6    // System trace audit number (fixed 6 digits)
-	p.IsoPackager[12] = 6    // Local transaction time (fixed 6 digits)
-	p.IsoPackager[13] = 4    // Local transaction date (fixed 4 digits)
-	p.IsoPackager[22] = 3    // POS entry mode (fixed 3 digits)
-	p.IsoPackager[25] = 2    // POS condition code (fixed 2 digits)
-	p.IsoPackager[35] = -37  // Track 2 data (variable 2-37 digits)
-	p.IsoPackager[37] = 12   // Retrieval reference number (fixed 12 digits)
-	p.IsoPackager[38] = 6    // Authorization ID response (fixed 6 digits)
-	p.IsoPackager[39] = 2    // Response code (fixed 2 digits)
-	p.IsoPackager[41] = 8    // Card acceptor terminal ID (fixed 8 digits)
-	p.IsoPackager[42] = 15   // Card acceptor ID code (fixed 15 digits)
-	p.IsoPackager[48] = -999 // Additional data (variable)
-	p.IsoPackager[55] = -999 // EMV data (variable)
-	p.IsoPackager[70] = 3    // Network management info code (fixed 3 digits)
-
-	return p
-}
-
 // Message represents an ISO8583 message
 type Message struct {
 	MTI         []byte
@@ -94,14 +263,25 @@ type Message struct {
 	FullMessage []byte
 }
 
-// NewMessage creates a new ISO8583 message
+// NewMessage creates a new ISO8583 message with a given packager.
 func NewMessage(packager *Packager) *Message {
 	if packager == nil {
-		packager = DefaultISOPackager()
+		panic("packager cannot be nil")
 	}
 	return &Message{
 		Packager: packager,
 	}
+}
+
+// Validate checks if all mandatory fields are present in the message.
+func (m *Message) Validate() error {
+	for i := 1; i <= 128; i++ {
+		fieldDef := m.Packager.Fields[i]
+		if fieldDef.IsMandatory && !m.Bitmap[i] {
+			return fmt.Errorf("%w: field %d", ErrMissingMandatoryField, i)
+		}
+	}
+	return nil
 }
 
 // Parse parses message from byte data.
@@ -121,17 +301,22 @@ func (m *Message) Parse(data []byte) error {
 	m.MTI = data[:4]
 	pos := 4
 
-	// Parse primary bitmap
-	if len(data) < pos+16 {
+	// Parse primary bitmap (Field 1)
+	bitmapFieldDef := m.Packager.Fields[1]
+	if bitmapFieldDef.Type != B || bitmapFieldDef.LengthType != FIXED {
+		return fmt.Errorf("field 1 (bitmap) must be of type 'b' and 'FIXED' length")
+	}
+	bitmapHexLen := bitmapFieldDef.MaxLength
+	if len(data) < pos+bitmapHexLen {
 		return ErrInvalidBitmap
 	}
 
 	var bitmap1 [8]byte
-	_, err := hex.Decode(bitmap1[:], data[pos:pos+16])
+	_, err := hex.Decode(bitmap1[:], data[pos:pos+bitmapHexLen])
 	if err != nil {
-		return fmt.Errorf("invalid primary bitmap: %w", err)
+		return fmt.Errorf("invalid primary bitmap hex: %w", err)
 	}
-	pos += 16
+	pos += bitmapHexLen
 
 	for i := 0; i < 8; i++ {
 		for j := 0; j < 8; j++ {
@@ -144,16 +329,15 @@ func (m *Message) Parse(data []byte) error {
 
 	// Check for secondary bitmap
 	if m.Bitmap[1] {
-		if len(data) < pos+16 {
+		if len(data) < pos+bitmapHexLen {
 			return ErrInvalidBitmap
 		}
-
 		var bitmap2 [8]byte
-		_, err := hex.Decode(bitmap2[:], data[pos:pos+16])
+		_, err := hex.Decode(bitmap2[:], data[pos:pos+bitmapHexLen])
 		if err != nil {
-			return fmt.Errorf("invalid secondary bitmap: %w", err)
+			return fmt.Errorf("invalid secondary bitmap hex: %w", err)
 		}
-		pos += 16
+		pos += bitmapHexLen
 
 		for i := 0; i < 8; i++ {
 			for j := 0; j < 8; j++ {
@@ -171,44 +355,39 @@ func (m *Message) Parse(data []byte) error {
 			continue
 		}
 
-		fieldDef := m.Packager.IsoPackager[fieldNum]
-		if fieldDef == 0 {
+		fieldDef := m.Packager.Fields[fieldNum]
+		if fieldDef.MaxLength == 0 { // Field not defined
 			continue
 		}
 
-		if fieldDef > 0 { // Fixed length
-			if len(data) < pos+fieldDef {
+		switch fieldDef.LengthType {
+		case FIXED:
+			fieldLen := fieldDef.MaxLength
+			if len(data) < pos+fieldLen {
 				return fmt.Errorf("insufficient data for field %d", fieldNum)
 			}
-			m.Fields[fieldNum] = data[pos : pos+fieldDef] // Zero-copy slice
-			pos += fieldDef
-		} else { // Variable length
-			maxLen := -fieldDef
-			var lenDigits int
-			if maxLen <= 99 {
-				lenDigits = 2
-			} else if maxLen <= 999 {
+			m.Fields[fieldNum] = data[pos : pos+fieldLen] // Zero-copy
+			pos += fieldLen
+		case LLVAR, LLLVAR:
+			lenDigits := 2
+			if fieldDef.LengthType == LLLVAR {
 				lenDigits = 3
-			} else {
-				lenDigits = 4
 			}
-
 			if len(data) < pos+lenDigits {
 				return fmt.Errorf("insufficient data for length of field %d", fieldNum)
 			}
-
 			fieldLen, err := parseASCIIToInt(data[pos : pos+lenDigits])
 			if err != nil {
 				return fmt.Errorf("invalid length for field %d: %w", fieldNum, err)
 			}
 			pos += lenDigits
-
 			if len(data) < pos+fieldLen {
 				return fmt.Errorf("insufficient data for value of field %d", fieldNum)
 			}
-
-			m.Fields[fieldNum] = data[pos : pos+fieldLen] // Zero-copy slice
+			m.Fields[fieldNum] = data[pos : pos+fieldLen] // Zero-copy
 			pos += fieldLen
+		default:
+			return fmt.Errorf("unsupported length type for field %d: %s", fieldNum, fieldDef.LengthType)
 		}
 	}
 
@@ -234,10 +413,15 @@ func (m *Message) Pack(buf []byte) (int, error) {
 			break
 		}
 	}
-
 	m.Bitmap[1] = needSecondary
 
-	if len(buf) < pos+16 {
+	// Pack bitmap (Field 1)
+	bitmapFieldDef := m.Packager.Fields[1]
+	if bitmapFieldDef.Type != B || bitmapFieldDef.LengthType != FIXED {
+		return 0, fmt.Errorf("field 1 (bitmap) must be of type 'b' and 'FIXED' length")
+	}
+	bitmapHexLen := bitmapFieldDef.MaxLength
+	if len(buf) < pos+bitmapHexLen {
 		return 0, ErrBufferTooSmall
 	}
 
@@ -249,11 +433,11 @@ func (m *Message) Pack(buf []byte) (int, error) {
 			bitmap1[byteIdx] |= 0x80 >> bitIdx
 		}
 	}
-	hex.Encode(buf[pos:pos+16], bitmap1[:])
-	pos += 16
+	hex.Encode(buf[pos:pos+bitmapHexLen], bitmap1[:])
+	pos += bitmapHexLen
 
 	if needSecondary {
-		if len(buf) < pos+16 {
+		if len(buf) < pos+bitmapHexLen {
 			return 0, ErrBufferTooSmall
 		}
 		var bitmap2 [8]byte
@@ -264,53 +448,56 @@ func (m *Message) Pack(buf []byte) (int, error) {
 				bitmap2[byteIdx] |= 0x80 >> bitIdx
 			}
 		}
-		hex.Encode(buf[pos:pos+16], bitmap2[:])
-		pos += 16
+		hex.Encode(buf[pos:pos+bitmapHexLen], bitmap2[:])
+		pos += bitmapHexLen
 	}
 
+	// Pack fields
 	for fieldNum := 2; fieldNum <= 128; fieldNum++ {
 		if !m.Bitmap[fieldNum] {
 			continue
 		}
-
-		fieldDef := m.Packager.IsoPackager[fieldNum]
-		if fieldDef == 0 {
+		fieldDef := m.Packager.Fields[fieldNum]
+		if fieldDef.MaxLength == 0 {
 			continue
 		}
 		fieldData := m.Fields[fieldNum]
 
-		if fieldDef > 0 { // Fixed
-			if len(buf) < pos+fieldDef {
+		switch fieldDef.LengthType {
+		case FIXED:
+			fieldLen := fieldDef.MaxLength
+			if len(buf) < pos+fieldLen {
 				return 0, ErrBufferTooSmall
 			}
-			copy(buf[pos:pos+fieldDef], fieldData)
-			if len(fieldData) < fieldDef {
-				for i := len(fieldData); i < fieldDef; i++ {
-					buf[pos+i] = ' '
+			copy(buf[pos:pos+fieldLen], fieldData)
+			// Apply padding
+			if len(fieldData) < fieldLen {
+				padding := buf[pos+len(fieldData) : pos+fieldLen]
+				padChar := byte(' ')
+				if fieldDef.Type == N {
+					padChar = byte('0')
+				}
+				for i := range padding {
+					padding[i] = padChar
 				}
 			}
-			pos += fieldDef
-		} else { // Variable
-			fieldLen := len(fieldData)
-			maxLen := -fieldDef
-			var lenDigits int
-			if maxLen <= 99 {
-				lenDigits = 2
-			} else if maxLen <= 999 {
-				lenDigits = 3
-			} else {
-				lenDigits = 4
-			}
+			pos += fieldLen
 
+		case LLVAR, LLLVAR:
+			lenDigits := 2
+			if fieldDef.LengthType == LLLVAR {
+				lenDigits = 3
+			}
+			fieldLen := len(fieldData)
 			if len(buf) < pos+lenDigits+fieldLen {
 				return 0, ErrBufferTooSmall
 			}
-
 			writeIntToASCII(buf[pos:pos+lenDigits], fieldLen, lenDigits)
 			pos += lenDigits
-
 			copy(buf[pos:pos+fieldLen], fieldData)
 			pos += fieldLen
+		default:
+			return 0, fmt.Errorf("unsupported length type for field %d: %s", fieldNum, fieldDef.LengthType)
 		}
 	}
 	return pos, nil
@@ -322,7 +509,7 @@ func (m *Message) SetField(fieldNum int, data []byte) error {
 		return fmt.Errorf("invalid field number: %d", fieldNum)
 	}
 	m.Bitmap[fieldNum] = true
-	m.Fields[fieldNum] = make([]byte, len(data)) // Make a copy for safety when building
+	m.Fields[fieldNum] = make([]byte, len(data))
 	copy(m.Fields[fieldNum], data)
 	return nil
 }
