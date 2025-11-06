@@ -2,6 +2,7 @@ package iso8583
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 )
 
@@ -108,73 +109,80 @@ func readBinaryLengthIndicator(buf []byte, config LengthIndicatorConfig) (int, i
 
 // writeASCIILengthIndicator writes ASCII decimal length (typically 4 digits, e.g., "0200").
 func writeASCIILengthIndicator(msgLen int, buf []byte, config LengthIndicatorConfig) (int, error) {
-	// This implementation assumes a 4-char ASCII length, which is common.
-	if config.Length != 4 {
-		return 0, fmt.Errorf("ASCII length indicator must be 4 characters, got %d", config.Length)
+	if config.Length <= 0 {
+		return 0, fmt.Errorf("ASCII length indicator must be > 0, got %d", config.Length)
 	}
 
-	if msgLen > 9999 {
-		return 0, fmt.Errorf("message length %d exceeds 4-digit ASCII maximum", msgLen)
+	// Calculate max value, e.g., 4 digits -> 9999
+	maxVal := math.Pow(10, float64(config.Length)) - 1
+	if float64(msgLen) > maxVal {
+		return 0, fmt.Errorf("message length %d exceeds %d-digit ASCII maximum (%.0f)", msgLen, config.Length, maxVal)
 	}
 
-	// Write as zero-padded decimal (e.g., 200 -> "0200")
-	// Note: writeIntToASCII is defined in message.go
-	writeIntToASCII(buf[:4], msgLen, 4)
-	return 4, nil
+	// Write as zero-padded decimal using the config length
+	// Assumes writeIntToASCII is available (from message.go)
+	writeIntToASCII(buf[:config.Length], msgLen, config.Length)
+	return config.Length, nil
 }
 
 // readASCIILengthIndicator reads ASCII decimal length (typically 4 digits, e.g., "0200").
 func readASCIILengthIndicator(buf []byte, config LengthIndicatorConfig) (int, int, error) {
-	if config.Length != 4 {
-		return 0, 0, fmt.Errorf("ASCII length indicator must be 4 characters, got %d", config.Length)
+	if config.Length <= 0 {
+		return 0, 0, fmt.Errorf("ASCII length indicator must be > 0, got %d", config.Length)
 	}
 
-	if len(buf) < 4 {
+	if len(buf) < config.Length {
 		return 0, 0, ErrInvalidLength
 	}
 
-	// Use a fast, allocation-free ASCII parser
-	msgLen, err := parseASCIIToInt(buf[:4])
+	// Parse using the dynamic config.Length
+	msgLen, err := parseASCIIToInt(buf[:config.Length])
 	if err != nil {
 		return 0, 0, fmt.Errorf("invalid ASCII length indicator: %w", err)
 	}
 
-	return msgLen, 4, nil
+	return msgLen, config.Length, nil
 }
 
 // writeHexLengthIndicator writes hexadecimal ASCII length (typically 4 chars, e.g., "00C8" for 200).
 func writeHexLengthIndicator(msgLen int, buf []byte, config LengthIndicatorConfig) (int, error) {
-	if config.Length != 4 {
-		return 0, fmt.Errorf("hex length indicator must be 4 characters, got %d", config.Length)
+	if config.Length <= 0 {
+		return 0, fmt.Errorf("hex length indicator must be > 0, got %d", config.Length)
 	}
 
-	if msgLen > 0xFFFF {
-		return 0, fmt.Errorf("message length %d exceeds 4-char hex maximum", msgLen)
+	// Calculate max value for the given hex char length
+	// 2 chars -> 0xFF (255)
+	// 4 chars -> 0xFFFF (65535)
+	maxVal := (1 << (uint(config.Length) * 4)) - 1
+	if msgLen > maxVal {
+		return 0, fmt.Errorf("message length %d exceeds %d-char hex maximum (%d)", msgLen, config.Length, maxVal)
 	}
 
-	// Convert to hex string (e.g., 200 -> "00C8")
-	hexStr := fmt.Sprintf("%04X", msgLen)
-	copy(buf[:4], hexStr)
-	return 4, nil
+	// Create format string dynamically, e.g., "%02X" or "%04X"
+	formatStr := fmt.Sprintf("%%0%dX", config.Length)
+	hexStr := fmt.Sprintf(formatStr, msgLen)
+
+	copy(buf[:config.Length], hexStr)
+	return config.Length, nil
 }
 
 // readHexLengthIndicator reads hexadecimal ASCII length (typically 4 chars, e.g., "00C8").
 func readHexLengthIndicator(buf []byte, config LengthIndicatorConfig) (int, int, error) {
-	if config.Length != 4 {
-		return 0, 0, fmt.Errorf("hex length indicator must be 4 characters, got %d", config.Length)
+	if config.Length <= 0 {
+		return 0, 0, fmt.Errorf("hex length indicator must be > 0, got %d", config.Length)
 	}
 
-	if len(buf) < 4 {
+	if len(buf) < config.Length {
 		return 0, 0, ErrInvalidLength
 	}
 
-	// Parse hex string (e.g., "00C8" -> 200)
-	msgLen, err := strconv.ParseInt(string(buf[:4]), 16, 32)
+	// Parse using the dynamic config.Length
+	msgLen, err := strconv.ParseInt(string(buf[:config.Length]), 16, 32)
 	if err != nil {
 		return 0, 0, fmt.Errorf("invalid hex length indicator: %w", err)
 	}
 
-	return int(msgLen), 4, nil
+	return int(msgLen), config.Length, nil
 }
 
 // parseASCIIToInt is a helper function to parse ASCII digits to an integer
