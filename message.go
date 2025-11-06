@@ -644,3 +644,12 @@ func (m *Message) GetValidationLevel() ValidationLevel {
 	defer m.mu.RUnlock()
 	return m.validationLevel
 }
+
+func (m *Message) IsNMM() bool {
+	switch string(m.MTI()) {
+	case MTI_NMM_REQUEST, MTI_NMM_RESPONSE:
+		return true
+	default:
+		return false
+	}
+}

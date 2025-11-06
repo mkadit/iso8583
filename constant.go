@@ -1,5 +1,10 @@
 package iso8583
 
+const (
+	MTI_NMM_REQUEST  = "0800"
+	MTI_NMM_RESPONSE = "0810"
+)
+
 var DefaultConfigField = map[int]FieldConfig{
 	// Field 1 is the Bitmap, handled automatically by the library
 
