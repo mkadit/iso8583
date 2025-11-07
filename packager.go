@@ -3,6 +3,7 @@ package iso8583
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 )
 
 // CompiledPackager holds the complete specification (schema) for an ISO8583 message.
@@ -45,9 +46,21 @@ func (cp *CompiledPackager) GetValidator() *CompiledValidator {
 	return cp.validator
 }
 
-// LoadPackagerFromJSON unmarshals a JSON byte slice into a PackagerConfig
+// LoadPackagerFromFile reads a JSON file from a path and returns a new CompiledPackager.
+func LoadPackagerFromFile(filePath string) (*CompiledPackager, error) {
+	// Read the file's contents
+	data, err := os.ReadFile(filePath) // Use ioutil.ReadFile if using Go < 1.16
+	if err != nil {
+		return nil, fmt.Errorf("failed to read packager file %s: %w", filePath, err)
+	}
+
+	// Use your existing function to parse the byte data
+	return LoadPackagerFromByte(data)
+}
+
+// LoadPackagerFromByte unmarshals a JSON byte slice into a PackagerConfig
 // and returns a new CompiledPackager.
-func LoadPackagerFromJSON(data []byte) (*CompiledPackager, error) {
+func LoadPackagerFromByte(data []byte) (*CompiledPackager, error) {
 	var config PackagerConfig
 	if err := json.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse packager config: %w", err)
