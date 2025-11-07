@@ -3,6 +3,7 @@ package iso8583
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 )
 
@@ -44,6 +45,50 @@ func (cp *CompiledPackager) GetFieldConfig(fieldNum int) (FieldConfig, bool) {
 // GetValidator returns the pre-compiled validator for this packager.
 func (cp *CompiledPackager) GetValidator() *CompiledValidator {
 	return cp.validator
+}
+
+// LogValue implements the slog.LogValuer interface for structured logging.
+// It provides a summary of the packager's configuration.
+func (cp *CompiledPackager) LogValue() slog.Value {
+	if cp == nil {
+		return slog.StringValue("nil")
+	}
+
+	// We create a slice of attributes to summarize the config
+	attrs := make([]slog.Attr, 0, 8)
+
+	// Log simple values. slog.Any will handle the int-based types.
+	attrs = append(attrs, slog.Any("bitmap_encoding", cp.bitmapEncoding))
+
+	// Log sub-structs as groups
+	attrs = append(attrs, slog.Group("length_indicator",
+		slog.Any("type", cp.lengthIndicator.Type),
+		slog.Int("length", cp.lengthIndicator.Length),
+	))
+
+	attrs = append(attrs, slog.Group("header_config",
+		slog.Any("type", cp.headerConfig.Type),
+		slog.Int("length", cp.headerConfig.Length),
+	))
+
+	attrs = append(attrs, slog.Group("tlv_config",
+		slog.Any("type", cp.tlvConfig.Type),
+		slog.Bool("enabled", cp.tlvConfig.Enabled),
+		slog.Int("max_depth", cp.tlvConfig.MaxDepth),
+	))
+
+	// Log summary of validator
+	if cp.validator != nil {
+		attrs = append(attrs, slog.Int("mandatory_fields_count", len(cp.validator.mandatoryFields)))
+	} else {
+		attrs = append(attrs, slog.Bool("has_validator", false))
+	}
+
+	// Log summary of fields (logging the full map is too verbose)
+	attrs = append(attrs, slog.Int("total_configured_fields", len(cp.fieldConfigs)))
+
+	// Return all attributes as a single group
+	return slog.GroupValue(attrs...)
 }
 
 // LoadPackagerFromFile reads a JSON file from a path and returns a new CompiledPackager.
