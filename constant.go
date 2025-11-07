@@ -3,6 +3,17 @@ package iso8583
 const (
 	MTI_NMM_REQUEST  = "0800"
 	MTI_NMM_RESPONSE = "0810"
+
+	// Response code constants
+	RC_APPROVED             = "00"
+	RC_REFER_TO_CARD_ISSUER = "01"
+	RC_INVALID_MERCHANT     = "03"
+	RC_DO_NOT_HONOR         = "05"
+	RC_INVALID_TRANSACTION  = "12"
+	RC_INVALID_AMOUNT       = "13"
+	RC_INVALID_CARD_NUMBER  = "14"
+	RC_FORMAT_ERROR         = "30"
+	RC_SYSTEM_MALFUNCTION   = "96"
 )
 
 var DefaultConfigField = map[int]FieldConfig{
