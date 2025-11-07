@@ -653,3 +653,10 @@ func (m *Message) IsNMM() bool {
 		return false
 	}
 }
+
+// MTI returns the 4-byte Message Type Indicator.
+func (m *Message) GetFullMessage() []byte {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.fullMessage[:]
+}
