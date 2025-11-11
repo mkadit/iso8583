@@ -547,6 +547,7 @@ func (m *Message) Clone() *Message {
 	for i := 0; i < 128; i++ {
 		if m.isFieldPresent(i + 1) {
 			clone.fields[i] = *m.fields[i].Clone() // Use Field.Clone for deep copy
+			clone.bitmap.SetField(i + 1)
 		}
 	}
 
@@ -586,7 +587,10 @@ func (m *Message) CreateResponse(responseCode string) (*Message, error) {
 	}
 
 	// Set Response Code
-	resMsg.SetField(39, responseCode)
+	err := resMsg.SetField(39, responseCode)
+	if err != nil {
+		return nil, err
+	}
 
 	return resMsg, nil
 }

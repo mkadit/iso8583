@@ -181,7 +181,8 @@ func (bm *BitmapManager) packBitmapHex(buf []byte) (int, error) {
 	if len(buf) < offset+hexBitmapSize {
 		return 0, ErrBufferTooSmall
 	}
-	hex.Encode(buf[offset:offset+hexBitmapSize], bm.primary[:])
+	// hex.Encode(buf[offset:offset+hexBitmapSize], bm.primary[:])
+	encodeHexUpper(buf[offset:offset+hexBitmapSize], bm.primary[:])
 	offset += hexBitmapSize
 
 	// Check space and write secondary bitmap if present
@@ -189,7 +190,8 @@ func (bm *BitmapManager) packBitmapHex(buf []byte) (int, error) {
 		if len(buf) < offset+hexBitmapSize {
 			return 0, ErrBufferTooSmall
 		}
-		hex.Encode(buf[offset:offset+hexBitmapSize], bm.secondary[:])
+		// hex.Encode(buf[offset:offset+hexBitmapSize], bm.secondary[:])
+		encodeHexUpper(buf[offset:offset+hexBitmapSize], bm.secondary[:])
 		offset += hexBitmapSize
 	}
 	return offset, nil
