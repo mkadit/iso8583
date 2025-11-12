@@ -31,7 +31,8 @@ func (f *Field) reset() {
 func (f *Field) String() string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	if !f.parsed || f.data == nil {
+	// Zero-copy string// Add f.length == 0 check
+	if !f.parsed || f.data == nil || f.length == 0 {
 		return ""
 	}
 	// Zero-copy string conversion using unsafe
@@ -57,6 +58,10 @@ func (f *Field) Int() (int, error) {
 	if !f.parsed || f.data == nil {
 		return 0, ErrFieldNotFound
 	}
+	// Add f.length == 0 check
+	if f.length == 0 {
+		return 0, nil // Or return an error, but 0 is safe
+	}
 	// Zero-copy using unsafe.String
 	return strconv.Atoi(unsafe.String(&f.data[0], f.length))
 }
@@ -68,6 +73,10 @@ func (f *Field) Int64() (int64, error) {
 	defer f.mu.RUnlock()
 	if !f.parsed || f.data == nil {
 		return 0, ErrFieldNotFound
+	}
+	// Add f.length == 0 check
+	if f.length == 0 {
+		return 0, nil // Or return an error, but 0 is safe
 	}
 	return strconv.ParseInt(unsafe.String(&f.data[0], f.length), 10, 64)
 }
