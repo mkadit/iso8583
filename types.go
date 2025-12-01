@@ -1,11 +1,16 @@
 package iso8583
 
-import "sync"
+import (
+	"encoding/json"
+	"strings"
+	"sync"
+)
 
 type FieldType int
 
 const (
 	FieldTypeANS FieldType = iota
+	FieldTypeAN
 	FieldTypeN
 	FieldTypeB
 	FieldTypeZ
@@ -85,6 +90,46 @@ type FieldConfig struct {
 	MinLength int        `json:"min_length"`
 	Mandatory bool       `json:"mandatory"`
 	Format    string     `json:"format,omitempty"`
+}
+
+func (fc *FieldConfig) UnmarshalJSON(data []byte) error {
+	type Alias FieldConfig
+	aux := &struct {
+		Type interface{} `json:"type"`
+		*Alias
+	}{
+		Alias: (*Alias)(fc),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	switch v := aux.Type.(type) {
+	case float64:
+		fc.Type = FieldType(v)
+	case string:
+		fc.Type = parseFieldTypeString(v)
+	}
+
+	return nil
+}
+
+func parseFieldTypeString(s string) FieldType {
+	switch strings.ToUpper(s) {
+	case "ANS":
+		return FieldTypeANS
+	case "AN":
+		return FieldTypeAN
+	case "N":
+		return FieldTypeN
+	case "B":
+		return FieldTypeB
+	case "Z":
+		return FieldTypeZ
+	default:
+		return FieldTypeCustom
+	}
 }
 
 type LengthIndicatorConfig struct {

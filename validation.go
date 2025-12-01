@@ -442,9 +442,22 @@ func compileValidator(config *PackagerConfig) *CompiledValidator {
 		// Add content type rule
 		switch fieldConfig.Type {
 		case FieldTypeN:
-			rules = append(rules, &NumericRule{})
+			rules = append(rules, &NumericRule{
+				AllowEmpty:        false,
+				AllowLeadingZeros: true,
+			})
+		case FieldTypeAN:
+			rules = append(rules, &AlphanumericRule{
+				AllowEmpty:        false,
+				AllowSpecialChars: false, // Only [0-9a-zA-Z ] allowed
+				CustomCharset:     "",
+			})
 		case FieldTypeANS:
-			rules = append(rules, &AlphanumericRule{})
+			rules = append(rules, &AlphanumericRule{
+				AllowEmpty:        false,
+				AllowSpecialChars: true, // All printable ASCII allowed
+				CustomCharset:     "",
+			})
 		case FieldTypeB:
 			rules = append(rules, &BinaryRule{})
 		}

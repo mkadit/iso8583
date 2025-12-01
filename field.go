@@ -223,8 +223,14 @@ func (f *Field) Validate(config FieldConfig) error {
 	switch config.Type {
 	case FieldTypeN:
 		return f.validateNumeric()
+	case FieldTypeAN:
+		// Alphanumeric only (no special chars)
+		rule := &AlphanumericRule{AllowSpecialChars: false}
+		return rule.Validate(f)
 	case FieldTypeANS:
-		return f.validateAlphanumeric()
+		// Alphanumeric + special chars
+		rule := &AlphanumericRule{AllowSpecialChars: true}
+		return rule.Validate(f)
 	case FieldTypeB:
 		return f.validateBinary()
 	}
