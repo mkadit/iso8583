@@ -156,6 +156,114 @@ func (f *Field) SetInt(value int, fieldType FieldType, width int) {
 	f.parsed = true
 }
 
+// SetFloat sets the field's value from a float64.
+// It formats the float with the specified precision (number of decimal places).
+// The precision parameter controls how many digits appear after the decimal point.
+// For example, precision=2 converts 12.34 to "1234" (amount in cents).
+// It applies zero-padding if the total width (integer part + decimal part) is larger than the result.
+func (f *Field) SetFloat(value float64, fieldType FieldType, precision int) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	// Handle negative values
+	negative := value < 0
+	if negative {
+		value = -value
+	}
+
+	// Convert to integer by moving decimal point
+	intValue := int64(value * pow10(precision))
+
+	// Calculate required digits
+	integerDigits := 0
+	if intValue > 0 {
+		integerDigits = 0
+		tmp := intValue
+		for tmp > 0 {
+			tmp /= 10
+			integerDigits++
+		}
+	} else {
+		integerDigits = 1
+	}
+
+	totalDigits := integerDigits + precision
+	if negative {
+		totalDigits++
+	}
+
+	// Use stack buffer for small numbers to avoid heap allocation
+	var stackBuf [40]byte
+	if totalDigits > len(stackBuf) {
+		totalDigits = len(stackBuf)
+	}
+
+	n := formatFloatToBytes(stackBuf[:], intValue, precision, negative)
+
+	f.length = n
+	if cap(f.data) >= n {
+		f.data = f.data[:n]
+		copy(f.data, stackBuf[:n])
+	} else {
+		f.data = make([]byte, n)
+		copy(f.data, stackBuf[:n])
+	}
+	f.fieldType = fieldType
+	f.parsed = true
+}
+
+func formatFloatToBytes(buf []byte, intValue int64, precision int, negative bool) int {
+	if intValue == 0 {
+		// Handle zero case
+		if precision > 0 {
+			buf[0] = '0'
+			buf[1] = '.'
+			for i := 0; i < precision; i++ {
+				buf[2+i] = '0'
+			}
+			return 2 + precision
+		}
+		buf[0] = '0'
+		return 1
+	}
+
+	// Convert integer part
+	i := len(buf) - 1
+	tmp := intValue
+	digits := 0
+
+	// Write all digits including leading zeros in decimal part
+	for j := 0; j < precision+digits || tmp > 0; j++ {
+		if j == precision && precision > 0 {
+			buf[i] = '.'
+			i--
+			continue
+		}
+		buf[i] = byte(tmp%10 + '0')
+		tmp /= 10
+		i--
+	}
+
+	if negative {
+		buf[i] = '-'
+		i--
+	}
+
+	// Move result to start of buffer
+	resultLen := len(buf) - 1 - i
+	copy(buf, buf[i+1:])
+	return resultLen
+}
+
+// pow10 returns 10^n as int64
+func pow10(n int) float64 {
+	result := 1.0
+	for i := 0; i < n; i++ {
+		result *= 10
+	}
+	return result
+}
+
 // formatIntToBytes converts an integer to its ASCII representation in the buffer.
 // It applies zero-padding to the left if the specified width is larger than
 // the number of digits.

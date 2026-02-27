@@ -1,763 +1,763 @@
 {
   "fields": {
     "2": {
-      "type": 0,
+      "type": "N",
       "length": 1,
       "max_length": 19,
       "mandatory": false
     },
     "3": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 6,
       "mandatory": true
     },
     "4": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 12,
       "mandatory": true
     },
     "5": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 12,
       "mandatory": false
     },
     "6": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 12,
       "mandatory": false
     },
     "7": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 10,
       "mandatory": true
     },
     "8": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 8,
       "mandatory": false
     },
     "9": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 8,
       "mandatory": false
     },
     "10": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 8,
       "mandatory": false
     },
     "11": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 6,
       "mandatory": true
     },
     "12": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 6,
       "mandatory": true
     },
     "13": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 4,
       "mandatory": true
     },
     "14": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 4,
       "mandatory": false
     },
     "15": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 4,
       "mandatory": false
     },
     "16": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 4,
       "mandatory": false
     },
     "17": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 4,
       "mandatory": false
     },
     "18": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 4,
       "mandatory": false
     },
     "19": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 4,
       "mandatory": false
     },
     "20": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 4,
       "mandatory": false
     },
     "21": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 3,
       "mandatory": false
     },
     "22": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 3,
       "mandatory": true
     },
     "23": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 3,
       "mandatory": false
     },
     "24": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 3,
       "mandatory": false
     },
     "25": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 2,
       "mandatory": true
     },
     "26": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 2,
       "mandatory": false
     },
     "27": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 3,
       "mandatory": false
     },
     "28": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 9,
       "mandatory": false
     },
     "29": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 3,
       "mandatory": false
     },
     "30": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 3,
       "mandatory": false
     },
     "31": {
-      "type": 0,
+      "type": "ANS",
       "length": 1,
       "max_length": 99,
       "mandatory": false
     },
     "32": {
-      "type": 0,
+      "type": "N",
       "length": 1,
       "max_length": 99,
       "mandatory": false
     },
     "33": {
-      "type": 0,
+      "type": "N",
       "length": 1,
       "max_length": 99,
       "mandatory": false
     },
     "34": {
-      "type": 1,
+      "type": "ANS",
       "length": 1,
       "max_length": 28,
       "mandatory": false
     },
     "35": {
-      "type": 1,
+      "type": "Z",
       "length": 1,
       "max_length": 37,
       "mandatory": false
     },
     "36": {
-      "type": 3,
+      "type": "N",
       "length": 1,
       "max_length": 99,
       "mandatory": false
     },
     "37": {
-      "type": 1,
+      "type": "AN",
       "length": 0,
       "max_length": 12,
       "mandatory": false
     },
     "38": {
-      "type": 1,
+      "type": "AN",
       "length": 0,
       "max_length": 6,
       "mandatory": false
     },
     "39": {
-      "type": 1,
+      "type": "AN",
       "length": 0,
       "max_length": 2,
       "mandatory": false
     },
     "40": {
-      "type": 1,
+      "type": "AN",
       "length": 0,
       "max_length": 3,
       "mandatory": false
     },
     "41": {
-      "type": 1,
+      "type": "ANS",
       "length": 0,
       "max_length": 8,
       "mandatory": false
     },
     "42": {
-      "type": 1,
+      "type": "ANS",
       "length": 0,
       "max_length": 15,
       "mandatory": false
     },
     "43": {
-      "type": 1,
+      "type": "ANS",
       "length": 0,
       "max_length": 40,
       "mandatory": false
     },
     "44": {
-      "type": 1,
+      "type": "ANS",
       "length": 1,
       "max_length": 25,
       "mandatory": false
     },
     "45": {
-      "type": 1,
+      "type": "ANS",
       "length": 1,
       "max_length": 76,
       "mandatory": false
     },
     "46": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "47": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "48": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "49": {
-      "type": 1,
+      "type": "AN",
       "length": 0,
       "max_length": 3,
       "mandatory": true
     },
     "50": {
-      "type": 1,
+      "type": "AN",
       "length": 0,
       "max_length": 3,
       "mandatory": false
     },
     "51": {
-      "type": 1,
+      "type": "AN",
       "length": 0,
       "max_length": 3,
       "mandatory": false
     },
     "52": {
-      "type": 2,
+      "type": "B",
       "length": 0,
       "max_length": 16,
       "mandatory": false
     },
     "53": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 16,
       "mandatory": false
     },
     "54": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 120,
       "mandatory": false
     },
     "55": {
-      "type": 2,
+      "type": "B",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "56": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "57": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "58": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "59": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "60": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "61": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "62": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "63": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "64": {
-      "type": 2,
+      "type": "B",
       "length": 0,
       "max_length": 8,
       "mandatory": false
     },
     "65": {
-      "type": 2,
+      "type": "B",
       "length": 0,
       "max_length": 1,
       "mandatory": false
     },
     "66": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 1,
       "mandatory": false
     },
     "67": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 2,
       "mandatory": false
     },
     "68": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 3,
       "mandatory": false
     },
     "69": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 3,
       "mandatory": false
     },
     "70": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 3,
       "mandatory": false
     },
     "71": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 4,
       "mandatory": false
     },
     "72": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 4,
       "mandatory": false
     },
     "73": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 6,
       "mandatory": false
     },
     "74": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 10,
       "mandatory": false
     },
     "75": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 10,
       "mandatory": false
     },
     "76": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 10,
       "mandatory": false
     },
     "77": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 10,
       "mandatory": false
     },
     "78": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 10,
       "mandatory": false
     },
     "79": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 10,
       "mandatory": false
     },
     "80": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 10,
       "mandatory": false
     },
     "81": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 10,
       "mandatory": false
     },
     "82": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 12,
       "mandatory": false
     },
     "83": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 12,
       "mandatory": false
     },
     "84": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 12,
       "mandatory": false
     },
     "85": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 12,
       "mandatory": false
     },
     "86": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 16,
       "mandatory": false
     },
     "87": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 16,
       "mandatory": false
     },
     "88": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 16,
       "mandatory": false
     },
     "89": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 16,
       "mandatory": false
     },
     "90": {
-      "type": 0,
+      "type": "N",
       "length": 0,
       "max_length": 42,
       "mandatory": false
     },
     "91": {
-      "type": 1,
+      "type": "AN",
       "length": 0,
       "max_length": 1,
       "mandatory": false
     },
     "92": {
-      "type": 1,
+      "type": "AN",
       "length": 0,
       "max_length": 2,
       "mandatory": false
     },
     "93": {
-      "type": 1,
+      "type": "AN",
       "length": 0,
       "max_length": 5,
       "mandatory": false
     },
     "94": {
-      "type": 1,
+      "type": "AN",
       "length": 0,
       "max_length": 7,
       "mandatory": false
     },
     "95": {
-      "type": 1,
+      "type": "ANS",
       "length": 0,
       "max_length": 42,
       "mandatory": false
     },
     "96": {
-      "type": 2,
+      "type": "B",
       "length": 0,
       "max_length": 8,
       "mandatory": false
     },
     "97": {
-      "type": 0,
+      "type": "AN",
       "length": 0,
       "max_length": 17,
       "mandatory": false
     },
     "98": {
-      "type": 1,
+      "type": "ANS",
       "length": 0,
       "max_length": 25,
       "mandatory": false
     },
     "99": {
-      "type": 0,
+      "type": "N",
       "length": 1,
       "max_length": 11,
       "mandatory": false
     },
     "100": {
-      "type": 0,
+      "type": "N",
       "length": 1,
       "max_length": 11,
       "mandatory": false
     },
     "101": {
-      "type": 1,
+      "type": "ANS",
       "length": 1,
       "max_length": 17,
       "mandatory": false
     },
     "102": {
-      "type": 1,
+      "type": "ANS",
       "length": 1,
       "max_length": 28,
       "mandatory": false
     },
     "103": {
-      "type": 1,
+      "type": "ANS",
       "length": 1,
       "max_length": 28,
       "mandatory": false
     },
     "104": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 100,
       "mandatory": false
     },
     "105": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "106": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "107": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "108": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "109": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "110": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "111": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "112": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "113": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "114": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "115": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "116": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "117": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "118": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "119": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "120": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "121": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "122": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "123": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "124": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "125": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "126": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "127": {
-      "type": 1,
+      "type": "ANS",
       "length": 2,
       "max_length": 999,
       "mandatory": false
     },
     "128": {
-      "type": 2,
+      "type": "B",
       "length": 0,
       "max_length": 8,
       "mandatory": false

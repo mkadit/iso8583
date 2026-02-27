@@ -142,7 +142,8 @@ func (m *Message) GetField(fieldNum int) (*Field, error) {
 }
 
 // SetField sets the value of a field.
-// It accepts string, []byte, or int.
+// It accepts string, []byte, int, or float64.
+// Float64 values are formatted with 2 decimal places by default.
 // It also sets the corresponding bit in the ISO8583 bitmap.
 func (m *Message) SetField(fieldNum int, value interface{}) error {
 	if fieldNum < 1 || fieldNum > 128 {
@@ -175,12 +176,59 @@ func (m *Message) SetField(fieldNum int, value interface{}) error {
 	case int:
 		// Format the integer
 		field.SetInt(v, FieldTypeN, 0) // SetInt handles its own locking, but we hold the message lock
+	case float64:
+		// Format the float with default precision of 2 decimal places
+		field.SetFloat(v, FieldTypeN, 2)
 	default:
 		return &FieldError{Field: fieldNum, Err: fmt.Errorf("unsupported value type")}
 	}
 
 	m.setFieldPresent(fieldNum) // Update presence bitset
 	m.bitmap.SetField(fieldNum) // Update ISO8583 bitmap
+	return nil
+}
+
+// SetFieldWithWidth sets the value of a field with configurable width/precision.
+// For int: width specifies the minimum number of digits (zero-padded if needed).
+// For float: precision specifies the number of decimal places.
+// It accepts string, []byte, int, or float64.
+// It also sets the corresponding bit in the ISO8583 bitmap.
+func (m *Message) SetFieldWithWidth(fieldNum int, value interface{}, width int) error {
+	if fieldNum < 1 || fieldNum > 128 {
+		return &FieldError{Field: fieldNum, Err: ErrInvalidField}
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	field := &m.fields[fieldNum-1]
+
+	switch v := value.(type) {
+	case string:
+		if len(v) > 0 {
+			field.data = unsafe.Slice(unsafe.StringData(v), len(v))
+			field.length = len(v)
+		} else {
+			field.data = nil
+			field.length = 0
+		}
+		field.fieldType = FieldTypeANS
+		field.parsed = true
+	case []byte:
+		field.data = v
+		field.length = len(v)
+		field.fieldType = FieldTypeB
+		field.parsed = true
+	case int:
+		field.SetInt(v, FieldTypeN, width)
+	case float64:
+		field.SetFloat(v, FieldTypeN, width)
+	default:
+		return &FieldError{Field: fieldNum, Err: fmt.Errorf("unsupported value type")}
+	}
+
+	m.setFieldPresent(fieldNum)
+	m.bitmap.SetField(fieldNum)
 	return nil
 }
 
