@@ -1,8 +1,12 @@
 package iso8583
 
 const (
-	MTI_NMM_REQUEST  = "0800"
-	MTI_NMM_RESPONSE = "0810"
+	MTI_AUTH_REQUEST      = "0200"
+	MTI_AUTH_RESPONSE     = "0210"
+	MTI_REVERSAL_REQUEST  = "0400"
+	MTI_REVERSAL_RESPONSE = "0410"
+	MTI_NMM_REQUEST       = "0800"
+	MTI_NMM_RESPONSE      = "0810"
 
 	// Response code constants
 	RC_APPROVED             = "00"

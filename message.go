@@ -108,6 +108,27 @@ func (m *Message) setFieldPresent(fieldNum int) {
 	m.fieldPresence[idx] |= bit
 }
 
+// ClearField clears (turns off) the bit for the specified field.
+// It removes the field from the bitmap and clears its presence flag.
+func (m *Message) ClearField(fieldNum int) error {
+	if fieldNum < 1 || fieldNum > 128 {
+		return fmt.Errorf("field number %d out of range", fieldNum)
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	idx := (fieldNum - 1) / 64
+	bit := uint64(1) << ((fieldNum - 1) % 64)
+	m.fieldPresence[idx] &^= bit
+
+	m.bitmap.ClearField(fieldNum)
+
+	m.fields[fieldNum-1] = Field{}
+
+	return nil
+}
+
 // MTI returns the 4-byte Message Type Indicator.
 func (m *Message) MTI() []byte {
 	m.mu.RLock()
