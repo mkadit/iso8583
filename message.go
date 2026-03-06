@@ -374,7 +374,13 @@ func (m *Message) Unpack(data []byte) error {
 
 		fieldOffset, err := m.parseField(fieldNum, data, offset)
 		if err != nil {
-			// Store the error and return
+			if m.validationLevel == ValidationNone {
+				logfile.Warn(nil, false, "skipping malformed field", slog.Group("data",
+					slog.Int("field", fieldNum),
+					slog.Any("error", err),
+				))
+				continue
+			}
 			m.lastError.Field = fieldNum
 			m.lastError.Err = err
 			return &m.lastError
