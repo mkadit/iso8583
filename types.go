@@ -95,7 +95,8 @@ type FieldConfig struct {
 func (fc *FieldConfig) UnmarshalJSON(data []byte) error {
 	type Alias FieldConfig
 	aux := &struct {
-		Type interface{} `json:"type"`
+		Type   interface{} `json:"type"`
+		Length interface{} `json:"length"`
 		*Alias
 	}{
 		Alias: (*Alias)(fc),
@@ -110,6 +111,13 @@ func (fc *FieldConfig) UnmarshalJSON(data []byte) error {
 		fc.Type = FieldType(v)
 	case string:
 		fc.Type = parseFieldTypeString(v)
+	}
+
+	switch v := aux.Length.(type) {
+	case float64:
+		fc.Length = LengthType(v)
+	case string:
+		fc.Length = parseLengthTypeString(v)
 	}
 
 	return nil
@@ -129,6 +137,21 @@ func parseFieldTypeString(s string) FieldType {
 		return FieldTypeZ
 	default:
 		return FieldTypeCustom
+	}
+}
+
+func parseLengthTypeString(s string) LengthType {
+	switch strings.ToUpper(s) {
+	case "FIXED":
+		return LengthFixed
+	case "LVAR", "LLVAR":
+		return LengthLLVAR
+	case "LLLVAR":
+		return LengthLLLVAR
+	case "LLLLVAR":
+		return LengthLLLLVAR
+	default:
+		return LengthFixed // safe fallback
 	}
 }
 

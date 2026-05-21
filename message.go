@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"sync"
 	"unsafe"
+
+	"github.com/mkadit/logfile"
 )
 
 // messagePool holds reusable Message objects to reduce allocations.
@@ -364,6 +366,12 @@ func (m *Message) Unpack(data []byte) error {
 	if err != nil {
 		return err
 	}
+
+	logfile.Debug(nil, false, "bitmap unpacked", slog.Group("data",
+		slog.String("raw_bytes", fmt.Sprintf("%x", data[offset:offset+bitmapLen])),
+		slog.Bool("has_secondary", m.bitmap.HasSecondaryBitmap()),
+		slog.String("present_fields", fmt.Sprintf("%v", m.bitmap.GetPresentFields())),
+	))
 	offset += bitmapLen
 
 	// 4. Parse Fields
@@ -386,6 +394,13 @@ func (m *Message) Unpack(data []byte) error {
 			return &m.lastError
 		}
 		offset = fieldOffset
+
+		logfile.Info(nil, false, "field parsed", slog.Group("data",
+			slog.Int("field", fieldNum),
+			slog.Int("length", m.fields[fieldNum-1].length),
+			slog.Any("type", m.fields[fieldNum-1].fieldType),
+			slog.String("value", m.fields[fieldNum-1].String()),
+		))
 	}
 
 	return nil

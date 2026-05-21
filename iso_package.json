@@ -20,7 +20,7 @@
     },
     "5": {
       "type": "N",
-      "length": 0,
+      "length": "FIXED",
       "max_length": 12,
       "mandatory": false
     },
