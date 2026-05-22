@@ -6,6 +6,39 @@ import (
 	"sync"
 )
 
+// String returns the raw value as a string (for ASCII text fields).
+func (t TLV) String() string {
+	return string(t.Value)
+}
+
+// Int interprets the value as a big-endian binary integer (most EMV numeric tags).
+func (t TLV) Int() int64 {
+	var n int64
+	for _, b := range t.Value {
+		n = (n << 8) | int64(b)
+	}
+	return n
+}
+
+// Hex returns the value as an uppercase hex string (for display/logging).
+func (t TLV) Hex() string {
+	return fmt.Sprintf("%X", t.Value)
+}
+
+// HexInt parses the value as hex-encoded ASCII text into an integer.
+func (t TLV) HexInt() (int64, error) {
+	return strconv.ParseInt(string(t.Value), 16, 64)
+}
+
+// BCD decodes packed BCD bytes into an integer (EMV date fields).
+func (t TLV) BCD() int64 {
+	var n int64
+	for _, b := range t.Value {
+		n = n*100 + int64((b>>4)*10+(b&0x0F))
+	}
+	return n
+}
+
 // TLVParser handles parsing and packing of Tag-Length-Value encoded data.
 // It supports Standard (1-byte T/L), EMV (variable T/L), and a custom
 // fixed-length ASCII format.
